@@ -1,0 +1,1753 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tembra</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --rose: #e879a0;
+        --rose-deep: #be185d;
+        --rose-soft: rgba(232, 121, 160, 0.18);
+        --rose-tint: rgba(232, 121, 160, 0.07);
+        --ink: #fafafa;
+        --ink-soft: #a1a1aa;
+        --cream: #09090b;
+        --paper: #18181b;
+        --line: #27272a;
+        --line-soft: #3f3f46;
+        --ok: #34d399;
+        --ok-bg: rgba(52, 211, 153, 0.12);
+        --warn: #fbbf24;
+        --warn-bg: rgba(251, 191, 36, 0.12);
+        --hot: #f87171;
+        --hot-bg: rgba(248, 113, 113, 0.12);
+        --idle: #94a3b8;
+        --idle-bg: rgba(148, 163, 184, 0.12);
+        --done: #818cf8;
+        --done-bg: rgba(129, 140, 248, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        font-family: "Inter", sans-serif;
+        background: var(--cream);
+        color: var(--ink);
+        font-size: 14px;
+        line-height: 1.55;
+        -webkit-font-smoothing: antialiased;
+        min-height: 100vh;
+      }
+
+      /* ====== LOADING ====== */
+      .loading {
+        position: fixed;
+        inset: 0;
+        background: var(--cream);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        transition: opacity 0.5s ease;
+      }
+      .loading.done {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .loading-inner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+        width: 200px;
+      }
+      .loading-bar {
+        width: 100%;
+        height: 2px;
+        background: var(--line);
+        border-radius: 1px;
+        overflow: hidden;
+        position: relative;
+      }
+      .loading-bar::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+          90deg,
+          transparent 0%,
+          var(--rose) 50%,
+          transparent 100%
+        );
+        animation: shimmer 1.6s ease-in-out infinite;
+      }
+      .loading-text {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 10px;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+        animation: fadeText 1.6s ease-in-out infinite;
+      }
+      @keyframes shimmer {
+        0% {
+          transform: translateX(-200%);
+        }
+        100% {
+          transform: translateX(200%);
+        }
+      }
+      @keyframes fadeText {
+        0%,
+        100% {
+          opacity: 0.3;
+        }
+        50% {
+          opacity: 0.8;
+        }
+      }
+
+      /* ====== TOP BAR ====== */
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        background: #000000;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        border-bottom: 1px solid var(--line);
+        padding: 14px 32px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .brand-mark {
+        display: flex;
+        align-items: center;
+      }
+      .brand-mark img {
+        height: 32px;
+        width: auto;
+        display: block;
+      }
+      .brand-text {
+        display: flex;
+        flex-direction: column;
+        line-height: 1;
+      }
+      .brand-title {
+        font-family: "Inter", sans-serif;
+        font-weight: 700;
+        font-size: 14px;
+        letter-spacing: 0.2em;
+        color: var(--ink);
+      }
+      .brand-sub {
+        font-size: 8px;
+        letter-spacing: 0.36em;
+        color: var(--ink-soft);
+        margin-top: 3px;
+        text-transform: uppercase;
+      }
+      .top-actions {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+      .sync-indicator {
+        font-size: 11px;
+        color: var(--ink-soft);
+        letter-spacing: 0.1em;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        text-transform: uppercase;
+      }
+      .sync-indicator .dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--ok);
+        animation: blink 2s ease-in-out infinite;
+      }
+      .sync-indicator.saving .dot {
+        background: var(--warn);
+      }
+      .sync-indicator.error .dot {
+        background: var(--hot);
+      }
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+      .btn {
+        border: 1px solid var(--line);
+        background: var(--paper);
+        padding: 8px 16px;
+        font-family: "Inter", sans-serif;
+        font-size: 12px;
+        color: var(--ink);
+        cursor: pointer;
+        letter-spacing: 0.05em;
+        transition: all 0.2s;
+        border-radius: 0;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .btn:hover {
+        border-color: var(--rose);
+        color: var(--rose);
+      }
+      .btn.primary {
+        background: var(--ink);
+        color: var(--cream);
+        border-color: var(--ink);
+      }
+      .btn.primary:hover {
+        background: var(--rose);
+        border-color: var(--rose);
+        color: white;
+      }
+      .btn.danger:hover {
+        border-color: var(--hot);
+        color: var(--hot);
+      }
+      .btn.small {
+        padding: 5px 10px;
+        font-size: 11px;
+      }
+
+      /* ====== HERO ====== */
+      .hero {
+        padding: 48px 40px 30px;
+        max-width: 1500px;
+        margin: 0 auto;
+        border-bottom: 1px solid var(--line);
+        position: relative;
+      }
+      .hero::before {
+        content: "Tembra";
+        position: absolute;
+        font-family: "Inter", sans-serif;
+        font-size: 220px;
+        font-weight: 800;
+        color: var(--ink);
+        opacity: 0.022;
+        top: 10px;
+        right: 40px;
+        letter-spacing: -0.05em;
+        pointer-events: none;
+        line-height: 0.8;
+      }
+      .hero-eyebrow {
+        font-size: 10px;
+        letter-spacing: 0.38em;
+        text-transform: uppercase;
+        color: var(--rose);
+        font-weight: 500;
+        margin-bottom: 14px;
+      }
+      .hero-eyebrow::before {
+        content: "";
+        display: inline-block;
+        width: 28px;
+        height: 1px;
+        background: var(--rose);
+        vertical-align: middle;
+        margin-right: 12px;
+      }
+      .hero h1 {
+        font-family: "Inter", sans-serif;
+        font-size: 52px;
+        font-weight: 700;
+        letter-spacing: -0.03em;
+        line-height: 1;
+        color: var(--ink);
+        margin-bottom: 14px;
+      }
+      .hero h1 em {
+        font-style: normal;
+        color: var(--rose);
+        font-weight: 300;
+      }
+      .hero-sub {
+        font-family: "Inter", sans-serif;
+        font-size: 14px;
+        color: var(--ink-soft);
+        max-width: 600px;
+        line-height: 1.7;
+      }
+
+      /* ====== STATS ====== */
+      .stats {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 0;
+        border: 1px solid var(--line);
+        background: var(--paper);
+        max-width: 1500px;
+        margin: 28px auto 0;
+      }
+      .stat {
+        padding: 22px 24px;
+        border-right: 1px solid var(--line);
+        position: relative;
+        cursor: pointer;
+        transition: background 0.3s ease;
+      }
+      .stat:last-child {
+        border-right: none;
+      }
+      .stat:hover {
+        background: var(--rose-tint);
+      }
+      .stat.active {
+        background: var(--rose-tint);
+      }
+      .stat-num {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 40px;
+        font-weight: 500;
+        color: var(--ink);
+        line-height: 1;
+      }
+      .stat-label {
+        font-size: 10px;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+        margin-top: 8px;
+        font-weight: 500;
+      }
+
+      /* ====== FILTERS ====== */
+      .filters {
+        max-width: 1500px;
+        margin: 0 auto;
+        padding: 28px 40px 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .filter-label {
+        font-size: 10px;
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+        margin-right: 6px;
+        font-weight: 500;
+      }
+      .chip {
+        border: 1px solid var(--line);
+        background: var(--paper);
+        padding: 6px 14px;
+        font-size: 12px;
+        color: var(--ink-soft);
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+      }
+      .chip:hover {
+        border-color: var(--rose);
+        color: var(--rose);
+      }
+      .chip.active {
+        background: var(--ink);
+        color: var(--cream);
+        border-color: var(--ink);
+      }
+      .chip .count {
+        font-size: 10px;
+        opacity: 0.65;
+      }
+      .search-wrap {
+        margin-left: auto;
+        position: relative;
+      }
+      .search-wrap input {
+        border: 1px solid var(--line);
+        background: var(--paper);
+        padding: 7px 14px 7px 32px;
+        font-size: 12px;
+        color: var(--ink);
+        width: 220px;
+        outline: none;
+        transition: border 0.2s;
+      }
+      .search-wrap input:focus {
+        border-color: var(--rose);
+      }
+      .search-wrap::before {
+        content: "⌕";
+        position: absolute;
+        left: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--ink-soft);
+        font-size: 13px;
+      }
+
+      /* ====== CONTENT ====== */
+      .main {
+        max-width: 1500px;
+        margin: 0 auto;
+        padding: 16px 40px 80px;
+      }
+
+      .area {
+        margin-bottom: 48px;
+      }
+      .area-header {
+        display: flex;
+        align-items: baseline;
+        gap: 16px;
+        margin-bottom: 22px;
+        padding-bottom: 14px;
+        border-bottom: 2px solid var(--ink);
+      }
+      .area-num {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: var(--rose);
+        letter-spacing: 0.05em;
+      }
+      .area-title {
+        font-family: "Inter", sans-serif;
+        font-size: 28px;
+        font-weight: 600;
+        color: var(--ink);
+        letter-spacing: -0.02em;
+      }
+      .area-count {
+        font-size: 10px;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+        margin-left: auto;
+      }
+      .area-done .area-header {
+        border-bottom-color: var(--ok);
+      }
+      .area-done .area-title,
+      .area-done .area-num {
+        color: var(--ok);
+      }
+
+      /* ====== CARDS ====== */
+      .cards {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .card {
+        background: var(--paper);
+        border: 1px solid var(--line);
+        position: relative;
+        transition: box-shadow 0.3s ease;
+      }
+      .card:hover {
+        box-shadow:
+          0 0 0 1px rgba(232, 121, 160, 0.18),
+          0 0 32px rgba(232, 121, 160, 0.06),
+          0 0 64px rgba(129, 140, 248, 0.04),
+          0 8px 40px rgba(0, 0, 0, 0.5);
+      }
+      .card::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: var(--status-color, var(--rose));
+      }
+
+      .card-head {
+        padding: 18px 24px 16px;
+        display: flex;
+        align-items: flex-start;
+        gap: 14px;
+        cursor: pointer;
+        user-select: none;
+      }
+      .card-head-main {
+        flex: 1;
+        min-width: 0;
+      }
+      .card-title {
+        font-family: "Inter", sans-serif;
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--ink);
+        line-height: 1.3;
+        margin-bottom: 6px;
+      }
+      .card-meta {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        font-size: 11px;
+        color: var(--ink-soft);
+      }
+      .card-meta .sep {
+        opacity: 0.4;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        font-weight: 600;
+        padding: 4px 9px;
+        white-space: nowrap;
+      }
+      .badge::before {
+        content: "";
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+      .badge.ok {
+        background: var(--ok-bg);
+        color: var(--ok);
+      }
+      .badge.warn {
+        background: var(--warn-bg);
+        color: var(--warn);
+      }
+      .badge.hot {
+        background: var(--hot-bg);
+        color: var(--hot);
+      }
+      .badge.idle {
+        background: var(--idle-bg);
+        color: var(--idle);
+      }
+      .badge.done {
+        background: var(--done-bg);
+        color: var(--done);
+      }
+      .badge.analysis {
+        background: var(--done-bg);
+        color: var(--done);
+      }
+
+      .card-last {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: var(--ink-soft);
+      }
+      .card-last b {
+        color: var(--ink);
+        font-weight: 500;
+      }
+
+      .card-actions {
+        display: flex;
+        gap: 6px;
+        flex-shrink: 0;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+      .card:hover .card-actions {
+        opacity: 1;
+      }
+      .icon-btn {
+        width: 28px;
+        height: 28px;
+        border: 1px solid var(--line);
+        background: var(--paper);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 13px;
+        color: var(--ink-soft);
+        transition: all 0.2s;
+      }
+      .icon-btn:hover {
+        border-color: var(--rose);
+        color: var(--rose);
+        background: var(--rose-tint);
+      }
+      .icon-btn.danger:hover {
+        border-color: var(--hot);
+        color: var(--hot);
+        background: var(--hot-bg);
+      }
+
+      .card-toggle {
+        width: 28px;
+        height: 28px;
+        border: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 11px;
+        color: var(--ink-soft);
+        background: var(--line);
+        transition: all 0.3s;
+      }
+      .card.open .card-toggle {
+        background: var(--ink);
+        color: var(--cream);
+        border-color: var(--ink);
+        transform: rotate(45deg);
+      }
+
+      .card-body {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+      .card.open .card-body {
+        max-height: 4000px;
+      }
+      .card-body-inner {
+        padding: 0 24px 22px;
+        border-top: 1px solid var(--line-soft);
+        padding-top: 18px;
+      }
+      .note {
+        font-family: "Inter", sans-serif;
+        font-size: 13px;
+        color: var(--ink-soft);
+        line-height: 1.65;
+        padding: 12px 16px;
+        background: var(--rose-tint);
+        border-left: 2px solid var(--rose);
+        margin-bottom: 18px;
+      }
+
+      /* ====== TIMELINE ====== */
+      .timeline {
+        position: relative;
+        padding-left: 20px;
+      }
+      .timeline::before {
+        content: "";
+        position: absolute;
+        left: 4px;
+        top: 6px;
+        bottom: 6px;
+        width: 1px;
+        background: var(--line);
+      }
+      .tl-item {
+        position: relative;
+        padding: 0 0 12px 0;
+        font-size: 13px;
+        line-height: 1.5;
+        color: var(--ink-soft);
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+      }
+      .tl-item::before {
+        content: "";
+        position: absolute;
+        left: -20px;
+        top: 7px;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: var(--paper);
+        border: 1.5px solid var(--line);
+      }
+      .tl-item.latest::before {
+        background: var(--rose);
+        border-color: var(--rose);
+        box-shadow: 0 0 0 4px var(--rose-soft);
+      }
+      .tl-date {
+        font-family: "JetBrains Mono", monospace;
+        font-size: 11px;
+        color: var(--rose);
+        font-weight: 500;
+        white-space: nowrap;
+        padding-top: 1px;
+      }
+      .tl-item.latest .tl-text {
+        color: var(--ink);
+        font-weight: 500;
+      }
+      .tl-text {
+        flex: 1;
+      }
+      .tl-delete {
+        opacity: 0;
+        font-size: 11px;
+        color: var(--ink-soft);
+        cursor: pointer;
+        padding: 2px 6px;
+        transition: opacity 0.15s;
+      }
+      .tl-item:hover .tl-delete {
+        opacity: 1;
+      }
+      .tl-delete:hover {
+        color: var(--hot);
+      }
+
+      .add-entry {
+        margin-top: 12px;
+        padding: 10px 14px;
+        border: 1px dashed var(--line);
+        background: transparent;
+        color: var(--ink-soft);
+        font-size: 12px;
+        cursor: pointer;
+        width: 100%;
+        text-align: left;
+        letter-spacing: 0.04em;
+        transition: all 0.2s;
+      }
+      .add-entry:hover {
+        border-color: var(--rose);
+        color: var(--rose);
+        background: var(--rose-tint);
+      }
+
+      .add-area {
+        margin: 16px 0;
+        padding: 14px;
+        border: 1px solid var(--rose);
+        background: var(--rose-tint);
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .add-area input {
+        flex: 1;
+        min-width: 100px;
+        border: 1px solid var(--line);
+        background: var(--paper);
+        padding: 8px 10px;
+        font-size: 13px;
+        outline: none;
+        font-family: "Inter", sans-serif;
+      }
+      .add-area input:focus {
+        border-color: var(--rose);
+      }
+      .add-area input.date-input {
+        flex: 0 0 110px;
+      }
+      .add-area input.text-input {
+        flex: 1;
+      }
+
+      /* ====== NEW FRENTE BUTTON ====== */
+      .add-frente-btn {
+        width: 100%;
+        padding: 16px;
+        border: 1px dashed var(--line);
+        background: transparent;
+        color: var(--ink-soft);
+        font-family: "Inter", sans-serif;
+        font-size: 12px;
+        letter-spacing: 0.06em;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin-top: 8px;
+      }
+      .add-frente-btn:hover {
+        border-color: var(--rose);
+        color: var(--rose);
+        background: var(--rose-tint);
+      }
+
+      /* ====== MODAL ====== */
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.78);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+        z-index: 200;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .modal-overlay.open {
+        display: flex;
+      }
+      .modal {
+        background: var(--paper);
+        width: 100%;
+        max-width: 560px;
+        max-height: 90vh;
+        overflow-y: auto;
+        padding: 32px;
+        animation: modalIn 0.3s ease;
+      }
+      @keyframes modalIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .modal h2 {
+        font-family: "Inter", sans-serif;
+        font-size: 22px;
+        font-weight: 600;
+        color: var(--ink);
+        margin-bottom: 6px;
+        letter-spacing: -0.03em;
+      }
+      .modal p.hint {
+        font-family: "Inter", sans-serif;
+        font-size: 13px;
+        color: var(--ink-soft);
+        margin-bottom: 22px;
+      }
+      .field {
+        margin-bottom: 16px;
+      }
+      .field label {
+        display: block;
+        font-size: 10px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+        font-weight: 500;
+        margin-bottom: 6px;
+      }
+      .field input,
+      .field textarea,
+      .field select {
+        width: 100%;
+        border: 1px solid var(--line);
+        background: var(--paper);
+        padding: 10px 12px;
+        font-size: 14px;
+        font-family: "Inter", sans-serif;
+        color: var(--ink);
+        outline: none;
+        transition: border 0.2s;
+      }
+      .field input:focus,
+      .field textarea:focus,
+      .field select:focus {
+        border-color: var(--rose);
+      }
+      .field textarea {
+        min-height: 80px;
+        resize: vertical;
+        line-height: 1.5;
+      }
+      .modal-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        margin-top: 26px;
+        padding-top: 18px;
+        border-top: 1px solid var(--line);
+      }
+
+      /* ====== TOAST ====== */
+      .toast {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        background: var(--ink);
+        color: var(--cream);
+        padding: 12px 20px;
+        font-size: 13px;
+        letter-spacing: 0.05em;
+        z-index: 300;
+        transform: translateY(120px);
+        transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+        box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.3);
+      }
+      .toast.show {
+        transform: translateY(0);
+      }
+      .toast.error {
+        background: var(--hot);
+      }
+
+      /* ====== EMPTY ====== */
+      .empty-area {
+        padding: 40px;
+        text-align: center;
+        color: var(--ink-soft);
+        font-family: "Inter", sans-serif;
+        font-size: 13px;
+        letter-spacing: 0.04em;
+        border: 1px dashed var(--line);
+        background: var(--paper);
+      }
+
+      /* ====== FOOTER ====== */
+      .footer {
+        max-width: 1500px;
+        margin: 0 auto;
+        padding: 36px 40px;
+        border-top: 1px solid var(--line);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 11px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--ink-soft);
+        flex-wrap: wrap;
+        gap: 14px;
+      }
+      .footer-brand {
+        font-family: "Inter", sans-serif;
+        font-size: 13px;
+        color: var(--rose);
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        font-weight: 600;
+      }
+
+      /* ====== HELPERS ====== */
+      .hidden {
+        display: none !important;
+      }
+      .highlight {
+        background: linear-gradient(
+          180deg,
+          transparent 55%,
+          var(--rose-soft) 55%
+        );
+        padding: 0 2px;
+      }
+
+      @media (max-width: 1024px) {
+        .stats {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .stat:nth-child(2n) {
+          border-right: none;
+        }
+        .hero h1 {
+          font-size: 38px;
+        }
+        .hero::before {
+          font-size: 130px;
+        }
+      }
+      @media (max-width: 680px) {
+        .topbar {
+          padding: 10px 16px;
+        }
+        .top-actions {
+          order: 3;
+          width: 100%;
+          justify-content: flex-end;
+        }
+        .hero {
+          padding: 32px 20px 24px;
+        }
+        .hero h1 {
+          font-size: 28px;
+        }
+        .main {
+          padding: 12px 20px 60px;
+        }
+        .filters {
+          padding: 16px 20px;
+          gap: 6px;
+        }
+        .search-wrap {
+          margin-left: 0;
+          width: 100%;
+        }
+        .search-wrap input {
+          width: 100%;
+        }
+        .stats {
+          grid-template-columns: 1fr;
+        }
+        .stat {
+          border-right: none;
+          border-bottom: 1px solid var(--line);
+        }
+        .card-head {
+          padding: 14px 16px;
+        }
+        .card-body-inner {
+          padding: 14px 16px 18px;
+        }
+        .area-title {
+          font-size: 26px;
+        }
+        .modal {
+          padding: 22px;
+        }
+        .card-actions {
+          opacity: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="loading" id="loading">
+      <div class="loading-inner">
+        <div class="loading-bar"></div>
+        <div class="loading-text">Tembra · Inicializando</div>
+      </div>
+    </div>
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">
+          <img src="assets/logo-tembra.png" alt="Logotipo Tembra OS" />
+        </div>
+        <div class="brand-text">
+          <div class="brand-title">Tembra</div>
+          <div class="brand-sub">Sistema de gestão</div>
+        </div>
+      </div>
+      <div class="top-actions">
+        <div class="sync-indicator" id="sync">
+          <span class="dot"></span>
+          <span id="sync-text">Sincronizado</span>
+        </div>
+        <button class="btn small" onclick="window.exportData()">
+          ↓ Exportar
+        </button>
+        <button class="btn small primary" onclick="window.openNewFrenteModal()">
+          + Nova frente
+        </button>
+      </div>
+    </header>
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="hero-eyebrow">Pendências · Providências · 2026</div>
+      <h1>
+        Tembra<br />
+        <em>Acompanhamento vivo.</em>
+      </h1>
+      <p class="hero-sub">
+        Painel editável com sincronização automática. Adicione movimentações,
+        altere status e crie novas frentes. <br />
+        Tudo salva em tempo real!
+      </p>
+    </section>
+
+    <!-- STATS -->
+    <section class="stats" id="stats"></section>
+
+    <!-- FILTERS -->
+    <div class="filters">
+      <span class="filter-label">Filtrar</span>
+      <button class="chip active" data-chip="all">Todos</button>
+      <button class="chip" data-chip="hot">Ação imediata</button>
+      <button class="chip" data-chip="warn">Em andamento</button>
+      <button class="chip" data-chip="analysis">Em análise</button>
+      <button class="chip" data-chip="ok">Monitorando</button>
+      <button class="chip" data-chip="idle">Suspenso</button>
+      <button class="chip" data-chip="done">Finalizado</button>
+      <div class="search-wrap">
+        <input type="text" id="search" placeholder="Buscar…" />
+      </div>
+    </div>
+
+    <main class="main" id="main"></main>
+
+    <footer class="footer">
+      <div>
+        <div class="footer-brand">Tembra</div>
+        <div style="margin-top: 4px; font-size: 10px">
+          Painel compartilhado · edições visíveis para todos
+        </div>
+      </div>
+      <div style="text-align: right">
+        <span style="color: var(--rose)" id="updated-at">—</span>
+      </div>
+    </footer>
+
+    <!-- MODAL -->
+    <div class="modal-overlay" id="modal">
+      <div class="modal">
+        <h2 id="modal-title">Nova frente</h2>
+        <p class="hint" id="modal-hint">Preencha os dados abaixo</p>
+        <div id="modal-body"></div>
+        <div class="modal-actions">
+          <button class="btn" onclick="window.closeModal()">Cancelar</button>
+          <button class="btn primary" id="modal-save">Salvar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- FIREBASE SCRIPT (MODULE) -->
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+      import {
+        getFirestore,
+        doc,
+        onSnapshot,
+        setDoc,
+      } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+      // Suas credenciais do Firebase
+      const firebaseConfig = {
+        apiKey: "AIzaSyDPH6Ooz0sS3uB8alIrzZ-UwKPUYdkSOZ0",
+        authDomain: "tembra-painel-vivo.firebaseapp.com",
+        projectId: "tembra-painel-vivo",
+        storageBucket: "tembra-painel-vivo.firebasestorage.app",
+        messagingSenderId: "312589426004",
+        appId: "1:312589426004:web:93c243fcfe056778903cc1",
+      };
+
+      // Inicializa Firebase e Banco de Dados
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      const docRef = doc(db, "painel_nexta", "estado_atual");
+
+      // ============================================================
+      // DATA MODEL + CONFIG
+      // ============================================================
+      const AREAS = [
+        { id: "fiscal", num: "01", name: "Fiscal" },
+        { id: "regulatorio", num: "02", name: "Regulatório" },
+        { id: "juridico", num: "03", name: "Jurídico" },
+        { id: "societario", num: "04", name: "Societário" },
+        { id: "finalizados", num: "05", name: "Finalizados" },
+      ];
+
+      const STATUS_LABELS = {
+        hot: "Ação imediata",
+        warn: "Em andamento",
+        analysis: "Em análise",
+        ok: "Monitorando",
+        idle: "Suspenso",
+        done: "Finalizado",
+      };
+
+      // Dados padrão iniciais caso o banco esteja vazio
+      const SEED = {
+        frentes: [
+          {
+            id: "f_8acs",
+            area: "societario",
+            title: "TEMBRA - 8ª ACS/Ata (Redução de capital)",
+            status: "warn",
+            note: "Redução de capital e ajuste da atividade preponderante da filial de Pinda.",
+            timeline: [
+              {
+                date: "05/05/26",
+                text: "Processos deferidos e registrados, aguardando a liberação das vias originais.",
+              },
+              {
+                date: "04/05/26",
+                text: "Protocolados os processos sob n 2158000/26-0 e 2158001264.",
+              },
+              {
+                date: "14/04/26",
+                text: "Circulada Minuta para validação e assinatura.",
+              },
+            ],
+          },
+          {
+            id: "f_rgi_unificacao",
+            area: "juridico",
+            title: "RGI – Unificação das Matrículas",
+            status: "analysis",
+            note: "Imobiliário: Transferência da titularidade do imóvel de Pindamonhangaba e cancelamento das condicionantes.",
+            timeline: [
+              {
+                date: "20/05/26",
+                text: "A prefeitura solicitou a apresentação de um projeto para a emissão da certidão, aguardando a lista de documentos para iniciarmos o dossiê.",
+              },
+              {
+                date: "19/04/26",
+                text: "Iniciados os procedimentos para unificação das matrículas, protocolado o pedido de certidão perante a Prefeitura.",
+              },
+              {
+                date: "15/04/26",
+                text: "Averbada a transferência de titularidade para TEMBRA.",
+              },
+            ],
+          },
+          {
+            id: "f_pref_sinalizacao",
+            area: "regulatorio",
+            title: "Prefeitura de Pinda – Melhoria de Sinalização",
+            status: "warn",
+            note: "Melhoria de sinalização e talvez obras como radar ou quebra-molas para mitigar novos acidentes.",
+            timeline: [
+              {
+                date: "06/05/26",
+                text: "Enviado pedido de atualização da demanda.",
+              },
+              {
+                date: "22/04/26",
+                text: "Formalizado via 1DOC o pedido do envio da projeção de materiais que serão utilizados na melhoria viária.",
+              },
+              {
+                date: "16/03/26",
+                text: "Enviado email ao França solicitando previsão de data.",
+              },
+            ],
+          },
+          {
+            id: "f_beneficiario_final",
+            area: "fiscal",
+            title: "TMS - Informação de Beneficiário Final (RFB)",
+            status: "hot",
+            note: "Processo cancelado de ofício por mudança na versão do programa, ajustando os documentos.",
+            timeline: [
+              {
+                date: "02/03/26",
+                text: "Processo cancelado de ofício por mudança na versão do programa, ajustando os documentos.",
+              },
+              {
+                date: "01/10/25",
+                text: "Circulado email com as instruções de envio do dossiê.",
+              },
+            ],
+          },
+        ],
+        lastUpdate: new Date().toISOString(),
+      };
+
+      // ============================================================
+      // STATE
+      // ============================================================
+      let state = { frentes: [], lastUpdate: null };
+      let currentFilter = "all";
+      let currentSearch = "";
+      let editingFrenteId = null;
+
+      // ============================================================
+      // FIREBASE SYNC HELPERS
+      // ============================================================
+      // Ao invés de usar window.storage, nós escutamos o Firestore em tempo real
+      onSnapshot(
+        docRef,
+        (docSnap) => {
+          if (docSnap.exists()) {
+            state = docSnap.data();
+            setSync("ok", "Sincronizado");
+            render();
+            document.getElementById("loading").classList.add("done");
+            setTimeout(() => document.getElementById("loading").remove(), 500);
+          } else {
+            // Se não existir nada no banco, salva os dados sementes (SEED)
+            saveState(true, SEED);
+          }
+        },
+        (error) => {
+          console.error("Erro na conexão: ", error);
+          setSync("error", "Erro de conexão");
+        },
+      );
+
+      async function saveState(isSeed = false, dataToSave = null) {
+        setSync("saving", "Salvando…");
+        const data = dataToSave || state;
+        data.lastUpdate = new Date().toISOString();
+
+        try {
+          await setDoc(docRef, data);
+          setSync("ok", "Sincronizado");
+          updateUpdatedAt();
+        } catch (err) {
+          console.error(err);
+          setSync("error", "Erro ao salvar");
+          showToast("Erro ao salvar no banco. Verifique permissões.", true);
+        }
+      }
+
+      function setSync(status, text) {
+        const el = document.getElementById("sync");
+        el.className = "sync-indicator " + (status === "ok" ? "" : status);
+        document.getElementById("sync-text").textContent = text;
+      }
+
+      function updateUpdatedAt() {
+        if (state.lastUpdate) {
+          const d = new Date(state.lastUpdate);
+          const pad = (n) => String(n).padStart(2, "0");
+          document.getElementById("updated-at").textContent =
+            `Atualizado ${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} · ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+      }
+
+      // ============================================================
+      // RENDER
+      // ============================================================
+      function render() {
+        renderStats();
+        renderMain();
+        updateUpdatedAt();
+      }
+
+      function renderStats() {
+        const counts = {
+          all: state.frentes.length,
+          hot: state.frentes.filter((f) => f.status === "hot").length,
+          warn: state.frentes.filter((f) => f.status === "warn").length,
+          analysis: state.frentes.filter((f) => f.status === "analysis").length,
+          ok: state.frentes.filter((f) => f.status === "ok").length,
+          idle: state.frentes.filter((f) => f.status === "idle").length,
+          done: state.frentes.filter((f) => f.status === "done").length,
+        };
+        const stats = [
+          { key: "all", num: counts.all, label: "Total em painel" },
+          { key: "hot", num: counts.hot, label: "Ação imediata" },
+          {
+            key: "warn",
+            num: counts.warn + counts.analysis,
+            label: "Em andamento",
+          },
+          { key: "idle", num: counts.idle, label: "Suspensas" },
+          { key: "done", num: counts.done, label: "Finalizadas" },
+        ];
+        document.getElementById("stats").innerHTML = stats
+          .map(
+            (s) => `
+    <div class="stat ${currentFilter === s.key ? "active" : ""}" onclick="window.applyFilter('${s.key}')">
+      <div class="stat-num">${String(s.num).padStart(2, "0")}</div>
+      <div class="stat-label">${s.label}</div>
+    </div>
+  `,
+          )
+          .join("");
+
+        document.querySelectorAll(".chip").forEach((chip) => {
+          const k = chip.dataset.chip;
+          const c = counts[k] || 0;
+          const countEl = chip.querySelector(".count");
+          if (countEl) countEl.remove();
+          const span = document.createElement("span");
+          span.className = "count";
+          span.textContent = c;
+          chip.appendChild(span);
+        });
+      }
+
+      function renderMain() {
+        const main = document.getElementById("main");
+        const q = currentSearch.toLowerCase().trim();
+
+        let frentes = state.frentes;
+        if (currentFilter !== "all") {
+          frentes = frentes.filter((f) => f.status === currentFilter);
+        }
+        if (q) {
+          frentes = frentes.filter((f) => {
+            const txt = (
+              f.title +
+              " " +
+              f.note +
+              " " +
+              (f.timeline || []).map((t) => t.date + " " + t.text).join(" ")
+            ).toLowerCase();
+            return txt.includes(q);
+          });
+        }
+
+        let html = "";
+        AREAS.forEach((area) => {
+          const areaFrentes = frentes.filter((f) => f.area === area.id);
+          if (areaFrentes.length === 0 && (currentFilter !== "all" || q))
+            return;
+
+          const areaDone = area.id === "finalizados" ? "area-done" : "";
+          html += `
+      <section class="area ${areaDone}" data-area="${area.id}">
+        <div class="area-header">
+          <div class="area-num">${area.num} —</div>
+          <h2 class="area-title">${area.name}</h2>
+          <div class="area-count">${areaFrentes.length} ${areaFrentes.length === 1 ? "frente" : "frentes"}</div>
+        </div>
+        <div class="cards">
+          ${areaFrentes.map(renderCard).join("")}
+          ${areaFrentes.length === 0 ? `<div class="empty-area">Nenhuma frente nesta área ainda.</div>` : ""}
+          <button class="add-frente-btn" onclick="window.openNewFrenteModal('${area.id}')">+ adicionar frente em ${area.name}</button>
+        </div>
+      </section>
+    `;
+        });
+
+        main.innerHTML =
+          html ||
+          `<div class="empty-area" style="padding:60px;">Nenhuma frente encontrada com os filtros atuais.</div>`;
+
+        if (!window._openOnce) {
+          document
+            .querySelectorAll('.card[data-status="hot"]')
+            .forEach((c) => c.classList.add("open"));
+          window._openOnce = true;
+        }
+      }
+
+      function renderCard(f) {
+        const statusColor =
+          {
+            hot: "var(--hot)",
+            warn: "var(--warn)",
+            ok: "var(--ok)",
+            idle: "var(--idle)",
+            done: "var(--ok)",
+            analysis: "var(--done)",
+          }[f.status] || "var(--rose)";
+        const latest = (f.timeline || [])[0];
+        const lastDate = latest ? latest.date : "—";
+        const badgeClass = f.status;
+        const label = STATUS_LABELS[f.status] || f.status;
+
+        return `
+    <article class="card" data-status="${f.status}" data-id="${f.id}" style="--status-color:${statusColor}">
+      <div class="card-head">
+        <div class="card-head-main" onclick="window.toggleCard('${f.id}')">
+          <h3 class="card-title">${escapeHtml(f.title)}</h3>
+          <div class="card-meta">
+            <span class="badge ${badgeClass}">${label}</span>
+            <span class="sep">·</span>
+            <span class="card-last">Última: <b>${escapeHtml(lastDate)}</b>${latest ? " — " + escapeHtml(truncate(latest.text, 70)) : ""}</span>
+          </div>
+        </div>
+        <div class="card-actions">
+          <button class="icon-btn" title="Editar" onclick="event.stopPropagation(); window.openEditFrenteModal('${f.id}')">✎</button>
+          <button class="icon-btn danger" title="Excluir" onclick="event.stopPropagation(); window.deleteFrente('${f.id}')">✕</button>
+        </div>
+        <div class="card-toggle" onclick="window.toggleCard('${f.id}')">+</div>
+      </div>
+      <div class="card-body">
+        <div class="card-body-inner">
+          ${f.note ? `<div class="note">${escapeHtml(f.note)}</div>` : ""}
+          <div class="timeline" id="timeline-${f.id}">
+            ${(f.timeline || [])
+              .map(
+                (t, i) => `
+              <div class="tl-item ${i === 0 ? "latest" : ""}">
+                <span class="tl-date">${escapeHtml(t.date)}</span>
+                <span class="tl-text">${escapeHtml(t.text)}</span>
+                <span class="tl-delete" title="Remover" onclick="window.deleteTimelineItem('${f.id}', ${i})">✕</span>
+              </div>
+            `,
+              )
+              .join("")}
+          </div>
+          <div id="add-entry-${f.id}">
+            <button class="add-entry" onclick="window.showAddEntry('${f.id}')">+ adicionar movimentação</button>
+          </div>
+        </div>
+      </div>
+    </article>
+  `;
+      }
+
+      function escapeHtml(s) {
+        if (s == null) return "";
+        return String(s).replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            })[c],
+        );
+      }
+      function truncate(s, n) {
+        s = String(s || "");
+        return s.length > n ? s.slice(0, n) + "…" : s;
+      }
+
+      // ============================================================
+      // EXPOSE ACTIONS TO WINDOW (due to module scoping)
+      // ============================================================
+      window.toggleCard = (id) => {
+        const card = document.querySelector(`.card[data-id="${id}"]`);
+        if (card) card.classList.toggle("open");
+      };
+
+      window.applyFilter = (key) => {
+        currentFilter = key;
+        document
+          .querySelectorAll(".chip")
+          .forEach((c) => c.classList.toggle("active", c.dataset.chip === key));
+        render();
+      };
+
+      document.querySelectorAll(".chip").forEach((chip) => {
+        chip.addEventListener("click", () =>
+          window.applyFilter(chip.dataset.chip),
+        );
+      });
+
+      document.getElementById("search").addEventListener("input", (e) => {
+        currentSearch = e.target.value;
+        renderMain();
+      });
+
+      window.showAddEntry = (frenteId) => {
+        const container = document.getElementById(`add-entry-${frenteId}`);
+        const today = new Date();
+        const pad = (n) => String(n).padStart(2, "0");
+        const todayStr = `${pad(today.getDate())}/${pad(today.getMonth() + 1)}/${String(today.getFullYear()).slice(-2)}`;
+
+        container.innerHTML = `
+    <div class="add-area">
+      <input class="date-input" id="new-date-${frenteId}" value="${todayStr}" placeholder="DD/MM/AA" maxlength="10">
+      <input class="text-input" id="new-text-${frenteId}" placeholder="O que aconteceu?" autofocus>
+      <button class="btn primary small" onclick="window.saveNewEntry('${frenteId}')">Adicionar</button>
+      <button class="btn small" onclick="window.cancelNewEntry('${frenteId}')">Cancelar</button>
+    </div>
+  `;
+        setTimeout(
+          () => document.getElementById(`new-text-${frenteId}`).focus(),
+          50,
+        );
+
+        document
+          .getElementById(`new-text-${frenteId}`)
+          .addEventListener("keydown", (e) => {
+            if (e.key === "Enter") window.saveNewEntry(frenteId);
+            if (e.key === "Escape") window.cancelNewEntry(frenteId);
+          });
+      };
+
+      window.cancelNewEntry = (frenteId) => {
+        document.getElementById(`add-entry-${frenteId}`).innerHTML =
+          `<button class="add-entry" onclick="window.showAddEntry('${frenteId}')">+ adicionar movimentação</button>`;
+      };
+
+      window.saveNewEntry = async (frenteId) => {
+        const date = document
+          .getElementById(`new-date-${frenteId}`)
+          .value.trim();
+        const text = document
+          .getElementById(`new-text-${frenteId}`)
+          .value.trim();
+        if (!text) {
+          showToast("Digite o texto da movimentação.", true);
+          return;
+        }
+        const frente = state.frentes.find((f) => f.id === frenteId);
+        if (!frente) return;
+        frente.timeline = frente.timeline || [];
+        frente.timeline.unshift({ date: date || "—", text });
+
+        await saveState(); // Salva no Firebase
+
+        setTimeout(() => {
+          const card = document.querySelector(`.card[data-id="${frenteId}"]`);
+          if (card) card.classList.add("open");
+        }, 100);
+        showToast("Movimentação adicionada.");
+      };
+
+      window.deleteTimelineItem = async (frenteId, index) => {
+        if (!confirm("Remover esta movimentação?")) return;
+        const frente = state.frentes.find((f) => f.id === frenteId);
+        if (!frente || !frente.timeline) return;
+        frente.timeline.splice(index, 1);
+
+        await saveState(); // Salva no Firebase
+
+        setTimeout(() => {
+          const card = document.querySelector(`.card[data-id="${frenteId}"]`);
+          if (card) card.classList.add("open");
+        }, 100);
+        showToast("Movimentação removida.");
+      };
+
+      window.deleteFrente = async (id) => {
+        const frente = state.frentes.find((f) => f.id === id);
+        if (!frente) return;
+        if (
+          !confirm(
+            `Excluir a frente "${frente.title}"?\n\nIsto apagará todo o histórico.`,
+          )
+        )
+          return;
+        state.frentes = state.frentes.filter((f) => f.id !== id);
+        await saveState(); // Salva no Firebase
+        showToast("Frente excluída.");
+      };
+
+      // ============================================================
+      // MODAL: NEW / EDIT FRENTE
+      // ============================================================
+      window.openNewFrenteModal = (areaId) => {
+        editingFrenteId = null;
+        document.getElementById("modal-title").textContent = "Nova frente";
+        document.getElementById("modal-hint").textContent =
+          "Crie uma nova pendência para acompanhamento.";
+        document.getElementById("modal-body").innerHTML = frenteFormHtml({
+          area: areaId || "fiscal",
+          status: "warn",
+        });
+        document.getElementById("modal-save").textContent = "Criar frente";
+        document.getElementById("modal-save").onclick =
+          window.saveFrenteFromModal;
+        document.getElementById("modal").classList.add("open");
+        setTimeout(() => document.getElementById("f-title").focus(), 100);
+      };
+
+      window.openEditFrenteModal = (id) => {
+        const f = state.frentes.find((x) => x.id === id);
+        if (!f) return;
+        editingFrenteId = id;
+        document.getElementById("modal-title").textContent = "Editar frente";
+        document.getElementById("modal-hint").textContent =
+          "Atualize os dados da pendência.";
+        document.getElementById("modal-body").innerHTML = frenteFormHtml(f);
+        document.getElementById("modal-save").textContent = "Salvar alterações";
+        document.getElementById("modal-save").onclick =
+          window.saveFrenteFromModal;
+        document.getElementById("modal").classList.add("open");
+        setTimeout(() => document.getElementById("f-title").focus(), 100);
+      };
+
+      function frenteFormHtml(f) {
+        const areas = AREAS.map(
+          (a) =>
+            `<option value="${a.id}" ${f.area === a.id ? "selected" : ""}>${a.name}</option>`,
+        ).join("");
+        const statuses = Object.entries(STATUS_LABELS)
+          .map(
+            ([k, v]) =>
+              `<option value="${k}" ${f.status === k ? "selected" : ""}>${v}</option>`,
+          )
+          .join("");
+        return `
+    <div class="field">
+      <label>Título *</label>
+      <input id="f-title" value="${escapeHtml(f.title || "")}" placeholder="Ex.: Licenciamento Campinas">
+    </div>
+    <div class="field">
+      <label>Área</label>
+      <select id="f-area">${areas}</select>
+    </div>
+    <div class="field">
+      <label>Status</label>
+      <select id="f-status">${statuses}</select>
+    </div>
+    <div class="field">
+      <label>Nota / contexto (opcional)</label>
+      <textarea id="f-note" placeholder="Informações gerais sobre a frente…">${escapeHtml(f.note || "")}</textarea>
+    </div>
+  `;
+      }
+
+      window.saveFrenteFromModal = async () => {
+        const title = document.getElementById("f-title").value.trim();
+        const area = document.getElementById("f-area").value;
+        const status = document.getElementById("f-status").value;
+        const note = document.getElementById("f-note").value.trim();
+
+        if (!title) {
+          showToast("Digite um título.", true);
+          return;
+        }
+
+        if (editingFrenteId) {
+          const f = state.frentes.find((x) => x.id === editingFrenteId);
+          if (f) {
+            f.title = title;
+            f.area = area;
+            f.status = status;
+            f.note = note;
+          }
+        } else {
+          state.frentes.push({
+            id: "f" + Date.now(),
+            area,
+            title,
+            status,
+            note,
+            timeline: [],
+          });
+        }
+
+        await saveState(); // Salva no Firebase
+
+        window.closeModal();
+        showToast(editingFrenteId ? "Frente atualizada." : "Frente criada.");
+      };
+
+      window.closeModal = () => {
+        document.getElementById("modal").classList.remove("open");
+        editingFrenteId = null;
+      };
+
+      document.getElementById("modal").addEventListener("click", (e) => {
+        if (e.target.id === "modal") window.closeModal();
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") window.closeModal();
+      });
+
+      // ============================================================
+      // EXPORT & TOAST
+      // ============================================================
+      window.exportData = () => {
+        const blob = new Blob([JSON.stringify(state, null, 2)], {
+          type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `nexta_2026_${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        showToast("Backup baixado.");
+      };
+
+      let toastTimer;
+      function showToast(msg, isError) {
+        const t = document.getElementById("toast");
+        t.textContent = msg;
+        t.className = "toast show" + (isError ? " error" : "");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => t.classList.remove("show"), 2800);
+      }
+    </script>
+  </body>
+</html>
